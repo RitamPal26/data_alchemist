@@ -1,20 +1,29 @@
 # .github/workflows/lint.yml
----
 name: Lint
 
 on:
   push:
   pull_request:
 
+# NEW ── give the token write access to commit statuses
+permissions:
+  contents: read      # checkout still works
+  statuses: write     # let Super-Linter report success/failure
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0        # super-linter needs full history
-      - name: Super-Linter
+          fetch-depth: 0        # Super-Linter needs full history
+
+      - name: Run Super-Linter
         uses: super-linter/super-linter@v7.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: false   # optional – lint only changed files
+          VALIDATE_ALL_CODEBASE: false   # only changed files
+          # Optional switches if you only want warnings:
+          # VALIDATE_CHECKOV: false
+          # YAML_PRETTIER_DISABLE_ERRORS: 'true'
