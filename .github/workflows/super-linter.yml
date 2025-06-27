@@ -1,26 +1,20 @@
-# This workflow executes several linters on changed files based on languages used in your code base whenever
-# you push a code or open a pull request.
-#
-# You can adjust the behavior by modifying this file.
-# For more information, see:
-# https://github.com/github/super-linter
+# .github/workflows/lint.yml
+---
 name: Lint
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Super-Linter with only the linters you need
+        with:
+          fetch-depth: 0        # super-linter needs full history
       - name: Super-Linter
         uses: super-linter/super-linter@v7.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: false   # only lint changed files
-          FILTER_REGEX_EXCLUDE: '.*\.css$' # example: skip CSS if you like
-          JAVASCRIPT_ES_CONFIG_FILE: .eslintrc.json
-          TYPESCRIPT_ES_CONFIG_FILE: .eslintrc.json
-
+          VALIDATE_ALL_CODEBASE: false   # optional – lint only changed files
