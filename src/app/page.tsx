@@ -18,27 +18,10 @@ export default function Home() {
 
   // ✅ ALWAYS call useStore - never conditionally
   const rows = useStore((s) => s.rows);
-  // NEW: Pull additional state for the stats dashboard
-  const errors = useStore((s) => s.errors);
-  const validationRate = useStore((s) => s.validationRate);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // NEW: Calculate totals for the stat cards
-  const totalFiles = Object.keys(rows).length;
-  const totalRecords = Object.values(rows).reduce(
-    (acc, sheetRows) => acc + (sheetRows?.length || 0),
-    0
-  );
-  const totalIssues = Object.values(errors || {}).reduce(
-    (acc, sheetErrors) => acc + (sheetErrors?.length || 0),
-    0
-  );
-  const validationPercentage = validationRate
-    ? `${(validationRate * 100).toFixed(0)}%`
-    : "N/A";
 
   const handleExport = async () => {
     try {
@@ -54,6 +37,7 @@ export default function Home() {
       const blob = await response.blob();
       saveAs(blob, "cleaned_scheduler_data.zip");
     } catch (error) {
+      console.error("Export failed:", error);
       alert("Export failed. Please try again.");
     }
   };

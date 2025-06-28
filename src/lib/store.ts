@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { CSVRow, Rule, WeightMap } from './types';
 
-interface StoreState {
+export interface StoreState {
   rows: Record<string, CSVRow[]>;          // keyed by sheet name
   errors: Record<string, string[]>;        // keyed by sheet name
   rules: Rule[];
