@@ -1,66 +1,78 @@
-// Create components/AutoFixSuggestions.tsx
 "use client";
-import { useStore } from "@/lib/store";
+import { useCallback } from "react";
+import { useStore, StoreState, ValidationError } from "@/lib/store";
+import { Wand2 } from "lucide-react";
 
 interface Props {
   sheet: string;
 }
 
+type Severity = "low" | "medium" | "high";
+
+interface FixSuggestion {
+  description: string;
+  action: () => void;
+  severity: Severity;
+}
+
 export default function AutoFixSuggestions({ sheet }: Props) {
-  const rows = useStore((s) => s.rows[sheet]) ?? [];
-  const errors = useStore((s) => s.errors[sheet]) ?? [];
+  const rows =
+    useStore(useCallback((s: StoreState) => s.rows[sheet], [sheet])) ?? [];
+  const errors: ValidationError[] =
+    useStore(useCallback((s: StoreState) => s.errors[sheet], [sheet])) ?? [];
   const setRows = useStore((s) => s.setRows);
   const setErrors = useStore((s) => s.setErrors);
 
-  const generateFixes = () => {
-    const fixes: Array<{
-      description: string;
-      action: () => void;
-    }> = [];
+  const generateFixes = (): FixSuggestion[] => {
+    const fixes: FixSuggestion[] = [];
 
-    // Fix priority levels out of range
-    if (errors.some((e) => e.includes("PriorityLevel"))) {
+    // --- FIX APPLIED HERE ---
+    // A helper function to safely get the message from a mixed-type error array
+    const getErrorMessage = (error: ValidationError): string => {
+      return typeof error === "string" ? error : error.message;
+    };
+
+    // --- FIX 1: HIGH SEVERITY ---
+    if (errors.some((e) => getErrorMessage(e).includes("Invalid JSON"))) {
       fixes.push({
-        description: "Set all invalid priority levels to 3 (medium)",
+        description: "Clear invalid JSON in 'AttributesJSON' fields",
+        severity: "high",
         action: () => {
-          const fixedRows = rows.map((row) => ({
-            ...row,
-            PriorityLevel:
-              isNaN(parseInt(row.PriorityLevel)) ||
-              parseInt(row.PriorityLevel) < 1 ||
-              parseInt(row.PriorityLevel) > 5
-                ? 3
-                : row.PriorityLevel,
-          }));
-          setRows(sheet, fixedRows);
-          // Re-validate after fix
-          import("@/lib/schemas").then(({ validateClients }) => {
-            setErrors(sheet, validateClients(fixedRows));
+          const fixedRows = rows.map((row) => {
+            try {
+              if (row.AttributesJSON) JSON.parse(row.AttributesJSON);
+              return row;
+            } catch {
+              return { ...row, AttributesJSON: "{}" };
+            }
           });
+          setRows(sheet, fixedRows);
+          import("@/lib/schemas").then(({ validateClients }) =>
+            setErrors(sheet, validateClients(fixedRows))
+          );
         },
       });
     }
 
-    // Fix invalid JSON
-    if (errors.some((e) => e.includes("Invalid JSON"))) {
+    // --- FIX 2: MEDIUM SEVERITY ---
+    if (errors.some((e) => getErrorMessage(e).includes("PriorityLevel"))) {
       fixes.push({
-        description: "Clear invalid JSON in AttributesJSON fields",
+        description:
+          "Clamp out-of-range priority levels to a valid range (1-5)",
+        severity: "medium",
         action: () => {
           const fixedRows = rows.map((row) => {
-            let attributesJSON = row.AttributesJSON;
-            if (attributesJSON) {
-              try {
-                JSON.parse(attributesJSON);
-              } catch {
-                attributesJSON = "{}"; // Replace with empty object
-              }
+            const priority = parseInt(row.PriorityLevel, 10);
+            if (isNaN(priority) || priority < 1 || priority > 5) {
+              const clampedPriority = Math.max(1, Math.min(priority || 1, 5));
+              return { ...row, PriorityLevel: clampedPriority };
             }
-            return { ...row, AttributesJSON: attributesJSON };
+            return row;
           });
           setRows(sheet, fixedRows);
-          import("@/lib/schemas").then(({ validateClients }) => {
-            setErrors(sheet, validateClients(fixedRows));
-          });
+          import("@/lib/schemas").then(({ validateClients }) =>
+            setErrors(sheet, validateClients(fixedRows))
+          );
         },
       });
     }
@@ -70,20 +82,46 @@ export default function AutoFixSuggestions({ sheet }: Props) {
 
   const fixes = generateFixes();
 
+  const severityStyles: Record<Severity, string> = {
+    low: "bg-green-100 text-green-800",
+    medium: "bg-yellow-100 text-yellow-800",
+    high: "bg-red-100 text-red-800",
+  };
+
   if (fixes.length === 0) return null;
 
   return (
-    <div className="my-4 bg-blue-50 border border-blue-200 p-4 rounded">
-      <h4 className="font-semibold mb-3 text-blue-800">
-        🤖 AI Auto-Fix Suggestions
-      </h4>
+    <div className="enterprise-card my-4 bg-card border border-border p-4 rounded-lg shadow-sm">
+      <div className="flex items-center gap-3 mb-4">
+        <Wand2 className="w-6 h-6 text-primary flex-shrink-0" />
+        <div>
+          <h4 className="font-semibold text-foreground">
+            Auto-Fix Suggestions
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Apply these automated fixes to improve data quality.
+          </p>
+        </div>
+      </div>
       <div className="space-y-2">
         {fixes.map((fix, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <span className="text-sm text-blue-700">{fix.description}</span>
+          <div
+            key={index}
+            className="flex justify-between items-center gap-4 p-3 bg-secondary rounded-md"
+          >
+            <p className="text-sm text-secondary-foreground flex-grow">
+              {fix.description}
+            </p>
+            <span
+              className={`px-2.5 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ${
+                severityStyles[fix.severity]
+              }`}
+            >
+              {fix.severity}
+            </span>
             <button
               onClick={fix.action}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+              className="px-3 py-1 bg-primary text-primary-foreground rounded-md text-xs font-semibold hover:bg-primary/90 flex-shrink-0"
             >
               Apply Fix
             </button>

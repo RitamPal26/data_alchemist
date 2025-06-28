@@ -18,10 +18,27 @@ export default function Home() {
 
   // ✅ ALWAYS call useStore - never conditionally
   const rows = useStore((s) => s.rows);
+  // NEW: Pull additional state for the stats dashboard
+  const errors = useStore((s) => s.errors);
+  const validationRate = useStore((s) => s.validationRate);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // NEW: Calculate totals for the stat cards
+  const totalFiles = Object.keys(rows).length;
+  const totalRecords = Object.values(rows).reduce(
+    (acc, sheetRows) => acc + (sheetRows?.length || 0),
+    0
+  );
+  const totalIssues = Object.values(errors || {}).reduce(
+    (acc, sheetErrors) => acc + (sheetErrors?.length || 0),
+    0
+  );
+  const validationPercentage = validationRate
+    ? `${(validationRate * 100).toFixed(0)}%`
+    : "N/A";
 
   const handleExport = async () => {
     try {
@@ -54,38 +71,7 @@ export default function Home() {
 
   return (
     <main className="container mx-auto py-8 px-4">
-      <header className="enterprise-header">
-        <h1 className="text-2xl font-bold mb-4">Scheduler Data Cleaner</h1>
-        
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-blue-600">{Object.keys(rows).length}</div>
-            <div className="text-sm text-gray-600">Files</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-green-600">
-              {Object.values(rows).reduce((total, sheetRows) => total + (sheetRows?.length || 0), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Records</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-red-600">
-              {Object.values(useStore((s) => s.errors)).reduce((total, sheetErrors) => total + (sheetErrors?.length || 0), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Issues</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-emerald-600">
-              {Object.values(rows).reduce((total, sheetRows) => total + (sheetRows?.length || 0), 0) - 
-               Object.values(useStore((s) => s.errors)).reduce((total, sheetErrors) => total + (sheetErrors?.length || 0), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Valid</div>
-          </div>
-        </div>
-      </header>
+      <h1 className="text-2xl font-bold mb-4">Scheduler Data Cleaner</h1>
 
       <FileUploader />
 

@@ -1,0 +1,66 @@
+[33mcommit e0dad5d534d4125b973357bcff5d0977be1a98dc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Sat Jun 28 13:45:19 2025 +0530
+
+    ts fixes
+
+[33mcommit 27f5233205d12173f7e277b704239e6432168cf2[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Sat Jun 28 12:25:03 2025 +0530
+
+    disabled eslint for build
+
+[33mcommit 5ae0d1e32719d754744fe660eb77e84351990d4c[m
+Merge: 122220b 42601a3
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Sat Jun 28 12:19:36 2025 +0530
+
+    Merge branch 'master' of https://github.com/RitamPal26/data_alchemist
+
+[33mcommit 122220bc8d8bdf86b658a4943debdc31b0728b39[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Sat Jun 28 12:19:31 2025 +0530
+
+    start
+
+[33mcommit 42601a3e1dc59392beefeab0917e961560e0dade[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Sat Jun 28 12:18:19 2025 +0530
+
+    Create quality-gates.yml
+
+[33mcommit 9fae2dc793c347811a1ef5258282f9493b4028f7[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Sat Jun 28 12:18:06 2025 +0530
+
+    Create deploy.yml
+
+[33mcommit 4cbdab28863279c0ce2b2264f86ae11e76eafe24[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Fri Jun 27 22:47:02 2025 +0530
+
+    Update README.md
+
+[33mcommit d1f6c13abd6d3ef405a3315e8331eba735c8304b[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Fri Jun 27 14:19:32 2025 +0530
+
+    Update super-linter.yml
+
+[33mcommit 002bdc50caba438bb8a86008cf3b89677d38d0cb[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Fri Jun 27 12:19:27 2025 +0530
+
+    Update super-linter.yml
+
+[33mcommit 3155e1b627b949c95814e95280c65fb3b7793edc[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Fri Jun 27 11:06:46 2025 +0530
+
+    Create super-linter.yml
+
+[33mcommit 0e2f926b713e8b8ea9ec0087775df91b68d139a7[m
+Author: Ritam Pal <ritamjunior26@gmail.com>
+Date:   Fri Jun 27 10:41:28 2025 +0530
+
+    Initial commit from Create Next App
