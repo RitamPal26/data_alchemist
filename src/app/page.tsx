@@ -54,38 +54,7 @@ export default function Home() {
 
   return (
     <main className="container mx-auto py-8 px-4">
-      <header className="enterprise-header">
-        <h1 className="text-2xl font-bold mb-4">Scheduler Data Cleaner</h1>
-        
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-blue-600">{Object.keys(rows).length}</div>
-            <div className="text-sm text-gray-600">Files</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-green-600">
-              {Object.values(rows).reduce((total, sheetRows) => total + (sheetRows?.length || 0), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Records</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-red-600">
-              {Object.values(useStore((s) => s.errors)).reduce((total, sheetErrors) => total + (sheetErrors?.length || 0), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Issues</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="text-2xl font-bold text-emerald-600">
-              {Object.values(rows).reduce((total, sheetRows) => total + (sheetRows?.length || 0), 0) - 
-               Object.values(useStore((s) => s.errors)).reduce((total, sheetErrors) => total + (sheetErrors?.length || 0), 0)}
-            </div>
-            <div className="text-sm text-gray-600">Valid</div>
-          </div>
-        </div>
-      </header>
+      <h1 className="text-2xl font-bold mb-4">Scheduler Data Cleaner</h1>
 
       <FileUploader />
 
