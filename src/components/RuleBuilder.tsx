@@ -235,7 +235,7 @@ export default function RuleBuilder() {
               Create a Rule with Plain English
             </h4>
             <p className="text-sm text-muted-foreground mb-4">
-              Type a command and we'll convert it into a formal rule for the
+              Type a command and we&apos;ll convert it into a formal rule for the
               scheduler.
             </p>
             <div className="flex items-center gap-2">
