@@ -6,6 +6,10 @@ export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json();
 
+    if (!prompt || typeof prompt !== "string") {
+      throw new Error("Invalid prompt provided");
+    }
+
     const response = await cohere.chat({
       model: "command-r-plus",
       message: `Convert this natural language rule into JSON format:
@@ -32,17 +36,25 @@ Examples:
 
     let rule;
     try {
-      // Extract JSON from response
       const jsonMatch = response.text.match(/\{[\s\S]*\}/);
       rule = JSON.parse(jsonMatch?.[0] || "{}");
     } catch {
-      // Fallback to pattern matching
       rule = generateFallbackRule(prompt);
     }
 
     return Response.json(rule);
   } catch (error) {
-    return Response.json(generateFallbackRule(prompt));
+    console.error("❌ NL to Rule API Error:", error);
+
+    // Return a safe fallback rule
+    return Response.json({
+      id: `rule-${Date.now()}`,
+      name: "Error Rule",
+      condition: { field: "unknown", operator: "not_empty", value: "" },
+      action: "flag",
+      weight: 5,
+      error: "Failed to process natural language input",
+    });
   }
 }
 
