@@ -46,7 +46,7 @@ A powerful, AI-driven data cleaning and validation tool built for scheduler data
 1. **Clone the repository**
    ```bash
    git clone https://github.com/RitamPal26/data_alchemist.git
-   cd scheduler-data-cleaner
+   cd data_alchemist
    ```
 
 2. **Install dependencies**
@@ -80,9 +80,6 @@ A powerful, AI-driven data cleaning and validation tool built for scheduler data
 
 
 
-### Main Dashboard
-
-*
 ## 🧪 Development
 
 ### Running Tests
