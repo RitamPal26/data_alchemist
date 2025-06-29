@@ -88,6 +88,20 @@ function generateFallbackRule(prompt: string) {
         weight: 5,
       }),
     },
+    {
+      regex: /(\w+)\s+should\s+be\s+([A-Za-z0-9]+)/i,
+      rule: (field: string, value: string) => ({
+        id: `rule-${Date.now()}`,
+        name: `${field} Equals Check`,
+        condition: {
+          field: field.toLowerCase(),
+          operator: "equals",
+          value: value,
+        },
+        action: "flag",
+        weight: 5,
+      }),
+    },
   ];
 
   for (const pattern of patterns) {
