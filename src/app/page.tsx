@@ -11,6 +11,7 @@ import { saveAs } from "file-saver";
 import SearchBar from "@/components/SearchBar";
 import AutoFixSuggestions from "@/components/AutoFixSuggestions";
 import ProgressDashboard from "@/components/ProgressDashboard";
+import {NLDataModifier} from "@/components/NLDataModifier";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -76,6 +77,7 @@ export default function Home() {
           <DataGrid sheet={sheet} rows={filteredRows[sheet] || rows[sheet]} />
 
           <ValidationSummary sheet={sheet} />
+          <NLDataModifier sheet={sheet} />  
           <AutoFixSuggestions sheet={sheet} />
         </section>
       ))}

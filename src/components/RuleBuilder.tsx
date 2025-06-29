@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { QueryBuilder } from "react-querybuilder";
 import "react-querybuilder/dist/query-builder.css";
 import { useStore } from "@/lib/store";
+import { toast } from "sonner"; // Add this if not already imported
 
 // Define tab types for better type safety
 type Tab = "natural" | "visual" | "templates";
@@ -13,16 +14,48 @@ export default function RuleBuilder() {
   const rows = useStore((s) => s.rows);
   const [mounted, setMounted] = useState(false);
   const [naturalRule, setNaturalRule] = useState("");
-  const [recommendations, setRecommendations] = useState<string[]>([]);
-  const [aiRecommendations, setAiRecommendations] = useState<string[]>([]);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+const [analysisStats, setAnalysisStats] = useState({ clients: 0, tasks: 0, workers: 0 });
+const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("natural");
+  const [nlPrompt, setNlPrompt] = useState("");
+  const [isConverting, setIsConverting] = useState(false);
+  const [previewRule, setPreviewRule] = useState(null);
+
+  const handleNLConvert = async () => {
+    if (!nlPrompt.trim()) return;
+
+    setIsConverting(true);
+    try {
+      const response = await fetch("/api/nl-to-rule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: nlPrompt }),
+      });
+
+      const rule = await response.json();
+      setPreviewRule(rule);
+
+      // Auto-add to rules if it looks good
+      if (rule.condition?.field !== "unknown") {
+        addRule(rule);
+        setNlPrompt("");
+        toast.success("Rule created successfully!");
+      }
+    } catch (error) {
+      toast.error("Failed to convert rule");
+    } finally {
+      setIsConverting(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
     // Generate rule recommendations when component mounts
     if (Object.keys(rows).length > 0) {
-      setRecommendations(generateRuleRecommendations());
+      setAiRecommendations(generateRuleRecommendations());
     }
   }, [rows]);
 
@@ -77,44 +110,42 @@ export default function RuleBuilder() {
     return null;
   };
 
-  const generateAIRecommendations = async () => {
-    setLoading(true);
-
-    try {
-      console.log("🤖 Calling AI recommendations...");
-
-      const response = await fetch("/api/ai-recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clients: rows["clients.csv"] || [],
-          tasks: rows["tasks.csv"] || [],
-          workers: rows["workers.csv"] || [],
-        }),
-      });
-
-      console.log("📡 Response status:", response.status);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+  const handleGetAIRecommendations = async () => {
+  setIsLoadingRecommendations(true);
+  try {
+    const { rows, errors } = useStore.getState();
+    
+    const response = await fetch('/api/ai-recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows, errors })
+    });
+    
+    if (!response.ok) throw new Error('API call failed');
+    
+    const { analyzed, recommendations } = await response.json();
+    
+    setAnalysisStats(analyzed);
+    setAiRecommendations(recommendations);
+    
+    toast.success(`Analyzed ${analyzed.clients + analyzed.tasks + analyzed.workers} records`);
+    
+  } catch (error) {
+    console.error('❌ AI recommendations error:', error);
+    // Fallback recommendations
+    setAiRecommendations([
+      {
+        id: 'fallback-1',
+        title: 'Upload data to get personalized recommendations',
+        description: 'AI analysis requires uploaded scheduler data',
+        priority: 'medium'
       }
+    ]);
+  } finally {
+    setIsLoadingRecommendations(false);
+  }
+};
 
-      const data = await response.json();
-      console.log("📋 Received data:", data);
-
-      setAiRecommendations(data.recommendations || []);
-    } catch (error) {
-      console.error("❌ Client error:", error);
-      // Set fallback recommendations
-      setAiRecommendations([
-        "AI service temporarily unavailable",
-        "Manually review task patterns for optimization",
-        "Consider load balancing for high-priority clients",
-      ]);
-    }
-
-    setLoading(false);
-  };
 
   const generateRuleRecommendations = () => {
     const recommendations: string[] = [];
@@ -235,31 +266,37 @@ export default function RuleBuilder() {
               Create a Rule with Plain English
             </h4>
             <p className="text-sm text-muted-foreground mb-4">
-              Type a command and we&apos;ll convert it into a formal rule for the
-              scheduler.
+              Describe your validation rule in natural language and AI will
+              convert it to a structured rule.
             </p>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="e.g., 'T001 and T002 must co-run'"
-                value={naturalRule}
-                onChange={(e) => setNaturalRule(e.target.value)}
-                className="w-full p-2 border rounded-md bg-secondary"
+
+            <div className="space-y-4">
+              <textarea
+                value={nlPrompt}
+                onChange={(e) => setNlPrompt(e.target.value)}
+                placeholder={`Examples:
+• "Email must not be empty"
+• "Duration over 8 hours should be flagged"
+• "Priority should contain urgent or high"`}
+                className="w-full h-32 p-3 border rounded-md bg-secondary"
               />
+
               <button
-                onClick={() => {
-                  const rule = parseNaturalRule(naturalRule);
-                  if (rule) {
-                    addRule(rule);
-                    setNaturalRule("");
-                  } else {
-                    alert("Could not parse rule.");
-                  }
-                }}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                onClick={handleNLConvert}
+                disabled={isConverting || !nlPrompt.trim()}
+                className="bg-primary text-white px-4 py-2 rounded-md disabled:opacity-50 hover:bg-primary/90"
               >
-                Create Rule
+                {isConverting ? "Converting..." : "Create Rule from Text"}
               </button>
+
+              {previewRule && (
+                <div className="bg-accent p-3 rounded-md">
+                  <h5 className="font-medium mb-2">Generated Rule Preview:</h5>
+                  <pre className="text-xs overflow-auto">
+                    {JSON.stringify(previewRule, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -293,76 +330,95 @@ export default function RuleBuilder() {
         )}
 
         {/* --- Tab 3: Templates & AI --- */}
-        {activeTab === "templates" && (
-          <div className="animate-fade-in space-y-6">
-            <div>
-              <h4 className="font-semibold text-foreground mb-2">
-                ⚡ Quick Rule Templates
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  onClick={() =>
-                    addRule({
-                      type: "coRun",
-                      tasks: ["T001", "T002"],
-                      description: "Template: Co-run",
-                    })
-                  }
-                  className="p-3 bg-secondary border rounded text-sm hover:bg-accent"
-                >
-                  Co-run Template
-                </button>
-                <button
-                  onClick={() =>
-                    addRule({
-                      type: "loadLimit",
-                      maxSlotsPerPhase: 3,
-                      description: "Template: Load limit",
-                    })
-                  }
-                  className="p-3 bg-secondary border rounded text-sm hover:bg-accent"
-                >
-                  Load Limit Template
-                </button>
+        {/* --- Tab 3: Templates & AI --- */}
+{activeTab === "templates" && (
+  <div className="animate-fade-in space-y-6">
+    <div>
+      <h4 className="font-semibold text-foreground mb-2">
+        ⚡ Quick Rule Templates
+      </h4>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <button
+          onClick={() =>
+            addRule({
+              type: "coRun",
+              tasks: ["T001", "T002"],
+              description: "Template: Co-run",
+            })
+          }
+          className="p-3 bg-secondary border rounded text-sm hover:bg-accent"
+        >
+          Co-run Template
+        </button>
+        <button
+          onClick={() =>
+            addRule({
+              type: "loadLimit",
+              maxSlotsPerPhase: 3,
+              description: "Template: Load limit",
+            })
+          }
+          className="p-3 bg-secondary border rounded text-sm hover:bg-accent"
+        >
+          Load Limit Template
+        </button>
+      </div>
+    </div>
+    
+    <div>
+      <h4 className="font-semibold text-foreground mb-2">
+        🔮 AI Rule Recommendations
+      </h4>
+      <p className="text-sm text-muted-foreground mb-4">
+        Analyzed {analysisStats.clients} clients, {analysisStats.tasks} tasks, {analysisStats.workers} workers
+      </p>
+      
+      <div className="space-y-2">
+        {aiRecommendations.length > 0 ? (
+          aiRecommendations.map((rec, i) => (
+            <div
+              key={rec.id || i}
+              className="p-3 bg-secondary border rounded-md space-y-2"
+            >
+              <div className="flex items-center justify-between">
+                <h5 className="font-medium text-sm">{rec.title || rec}</h5>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  rec.priority === 'high' ? 'bg-red-100 text-red-800' :
+                  rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {rec.priority || 'medium'}
+                </span>
               </div>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-2">
-                🎯 AI Recommendations
-              </h4>
-              <div className="space-y-2">
-                {aiRecommendations.length > 0 ? (
-                  aiRecommendations.map((rec, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-sm p-2 bg-secondary rounded"
-                    >
-                      <span>{rec}</span>
-                      <button
-                        onClick={() => applyRecommendation(rec)}
-                        className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/90"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Click the button to get AI-powered suggestions based on your
-                    data.
-                  </p>
-                )}
-              </div>
+              {rec.description && (
+                <p className="text-xs text-muted-foreground">{rec.description}</p>
+              )}
               <button
-                onClick={generateAIRecommendations}
-                disabled={loading}
-                className="mt-4 w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                onClick={() => applyRecommendation(rec.title || rec)}
+                className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/90"
               >
-                {loading ? "🤖 Analyzing..." : "🧠 Get AI Recommendations"}
+                Apply Rule
               </button>
             </div>
-          </div>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Upload data and click the button to get AI-powered suggestions.
+          </p>
         )}
+      </div>
+      
+      <button
+        onClick={handleGetAIRecommendations}
+        disabled={isLoadingRecommendations}
+        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 disabled:opacity-50"
+      >
+        {isLoadingRecommendations ? 'Analyzing...' : '🔮 Get AI Recommendations'}
+      </button>
+    </div>
+  </div>
+)}
+
 
         {/* --- Persistent: Current Rules List --- */}
         {rules.length > 0 && (

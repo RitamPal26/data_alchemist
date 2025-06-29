@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CSVRow, Rule, WeightMap } from './types';
+import type { CSVRow, Rule, WeightMap, ValidationError } from './types';
 
 export interface StoreState {
   rows: Record<string, CSVRow[]>;          // keyed by sheet name
